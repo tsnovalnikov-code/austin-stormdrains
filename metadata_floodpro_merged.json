@@ -1,0 +1,27 @@
+{
+  "source_page": "https://maps.austintexas.gov/floodpro/",
+  "service_url": "https://maps.austintexas.gov/arcgis/rest/services/FloodPro/Stormdrain_Infrastructure/MapServer",
+  "layers": [
+    7,
+    8
+  ],
+  "layer_names": {
+    "7": "Drainage Pipe (public)",
+    "8": "Private Drainage Pipe"
+  },
+  "feature_count": 152998,
+  "public_count": 93739,
+  "private_count": 59259,
+  "pulled_at_utc": "2026-11-03 14:51:29 UTC",
+  "pulled_at_local": "2026-11-03 08:51:29 AM CST",
+  "coordinate_system": "WGS84 / EPSG:4326",
+  "total_shape_length_ft": 11242503.64,
+  "total_shape_length_miles": 2129.26,
+  "year_built_range": "1904\u20132025",
+  "width_range": "2\u2013480\"",
+  "height_range": "2\u2013480\"",
+  "outputs": {
+    "csv": "Austin_FloodPro_Drainage_Pipes.csv",
+    "geojson": "Austin_FloodPro_Drainage_Pipes.geojson"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "source_page": "https://maps.austintexas.gov/floodpro/",
+  "service_url": "https://maps.austintexas.gov/arcgis/rest/services/FloodPro/Stormdrain_Infrastructure/MapServer",
+  "pulled_at_utc": "2026-11-03 15:54:48 UTC",
+  "layers": [
+    {
+      "layer_id": 5,
+      "name": "Header",
+      "count": 19967,
+      "url": "https://maps.austintexas.gov/arcgis/rest/services/FloodPro/Stormdrain_Infrastructure/MapServer/5"
+    },
+    {
+      "layer_id": 6,
+      "name": "Manhole",
+      "count": 10962,
+      "url": "https://maps.austintexas.gov/arcgis/rest/services/FloodPro/Stormdrain_Infrastructure/MapServer/6"
+    }
+  ]
+}

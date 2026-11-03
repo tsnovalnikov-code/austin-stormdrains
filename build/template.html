@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Austin Private Drainage Pipes · Explorer</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<style>
+  :root {
+    --bg: #eef2f7;
+    --panel: #ffffff;
+    --panel-2: #f8fafc;
+    --border: #dbe3ec;
+    --border-strong: #c8d3e0;
+    --text: #0f172a;
+    --muted: #64748b;
+    --muted-2: #94a3b8;
+    --accent: #0f766e;
+    --accent-dark: #0d6b63;
+    --accent-soft: #ecfdf5;
+    --accent-border: #99f6e4;
+    --shadow: 0 1px 2px rgba(15, 23, 42, .05), 0 10px 28px rgba(15, 23, 42, .06);
+    --shadow-lg: 0 18px 44px rgba(15, 23, 42, .18);
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.35;
+    overflow: hidden;
+  }
+  body.no-scroll { overflow: hidden; }
+  button, input, select { font: inherit; }
+  button { color: inherit; }
+  a { color: var(--accent); }
+  [hidden] { display: none !important; }
+  .muted { color: var(--muted); }
+
+  .app-header {
+    height: 72px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 18px;
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    z-index: 10;
+  }
+  .brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .brand-mark {
+    width: 38px; height: 38px; flex: 0 0 auto;
+    border-radius: 11px;
+    background: linear-gradient(135deg, #0f766e 0%, #0284c7 100%);
+    color: #fff; font-weight: 800; font-size: 13px;
+    display: grid; place-items: center;
+    letter-spacing: -.03em;
+    box-shadow: 0 4px 12px rgba(15, 118, 110, .22);
+  }
+  .brand-text { min-width: 0; }
+  .brand h1 {
+    margin: 0; font-size: 16px; line-height: 1.2;
+    letter-spacing: -.015em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .brand p { margin: 2px 0 0; font-size: 11.5px; color: var(--muted); }
+  .header-stats { display: flex; gap: 24px; margin-left: auto; padding-right: 4px; }
+  .stat { display: flex; flex-direction: column; min-width: 62px; }
+  .stat-value { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .stat-label { font-size: 9.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  .header-link, .source-link {
+    border: 0; background: none; padding: 6px 2px;
+    font-size: 12px; color: var(--muted); text-decoration: none;
+    cursor: pointer; white-space: nowrap;
+  }
+  .header-link:hover, .source-link:hover { color: var(--accent); }
+  .header-mobile-btn { display: none; }
+
+  .app-shell { display: flex; height: calc(100vh - 72px); min-height: 0; }
+  .sidebar {
+    width: 344px; flex: 0 0 344px;
+    background: #fff;
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    min-height: 0;
+    position: relative;
+    z-index: 20;
+  }
+  .sidebar-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px 9px;
+  }
+  .sidebar-head h2 { margin: 0; font-size: 14px; letter-spacing: -.01em; }
+  .sidebar-head-actions { display: flex; align-items: center; gap: 8px; }
+  .link-btn {
+    border: 0; background: none; color: var(--accent);
+    font-size: 12px; cursor: pointer; padding: 3px 2px;
+  }
+  .link-btn:hover { color: var(--accent-dark); text-decoration: underline; }
+  .sidebar-close { display: none; }
+
+  .search-wrap { position: relative; padding: 0 16px 10px; }
+  .search-wrap svg {
+    position: absolute; left: 26px; top: 50%; transform: translateY(-60%);
+    width: 15px; height: 15px; color: var(--muted-2); pointer-events: none;
+  }
+  .search-wrap input {
+    width: 100%; padding: 9px 10px 9px 34px;
+    border: 1px solid var(--border); border-radius: 9px;
+    background: var(--panel-2); color: var(--text);
+    outline: none; font-size: 12.5px;
+  }
+  .search-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(15, 118, 110, .1); background: #fff; }
+
+  .quick-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 12px; }
+  .quick-chip {
+    border: 1px solid var(--border); background: #fff;
+    border-radius: 999px; padding: 5px 9px;
+    font-size: 10.5px; font-weight: 600; color: var(--muted);
+    cursor: pointer; white-space: nowrap;
+  }
+  .quick-chip:hover { border-color: var(--border-strong); color: var(--text); }
+  .quick-chip.active { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent); }
+
+  .filter-scroll { flex: 1; overflow-y: auto; padding: 0 16px 16px; scrollbar-width: thin; }
+  .filter-section { padding: 14px 0; border-top: 1px solid var(--border); }
+  .filter-section:first-child { border-top: 0; }
+  .filter-section h3 {
+    margin: 0 0 10px; font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .075em; color: var(--muted);
+    display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;
+  }
+  .filter-section h3 .hint {
+    font-size: 10px; font-weight: 400; text-transform: none;
+    letter-spacing: 0; color: var(--muted-2);
+  }
+  .sub-label {
+    display: block; margin-bottom: 5px; font-size: 10.5px; font-weight: 600;
+    color: var(--muted); text-transform: uppercase; letter-spacing: .04em;
+  }
+  .field-stack { display: flex; flex-direction: column; gap: 10px; }
+  .check {
+    display: flex; align-items: center; gap: 7px;
+    margin-top: 8px; font-size: 11.5px; color: var(--muted); cursor: pointer;
+  }
+  .check input { width: 14px; height: 14px; accent-color: var(--accent); }
+  .filter-section.advanced summary {
+    cursor: pointer; font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .075em; color: var(--muted);
+    list-style: none; display: flex; align-items: center; gap: 6px;
+  }
+  .filter-section.advanced summary::-webkit-details-marker { display: none; }
+  .filter-section.advanced summary::before { content: '+'; font-size: 14px; line-height: 1; color: var(--muted-2); }
+  .filter-section.advanced[open] summary::before { content: '−'; }
+  .filter-section.advanced summary:hover { color: var(--text); }
+  .date-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 11px; }
+  .date-grid label { font-size: 10px; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
+  .date-grid input {
+    width: 100%; padding: 6px 7px; border: 1px solid var(--border);
+    border-radius: 7px; background: #fff; font-size: 11px; color: var(--text); outline: none;
+  }
+  .date-grid input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(15, 118, 110, .1); }
+
+  .range-values { display: flex; align-items: center; gap: 7px; }
+  .range-values input {
+    width: 100%; min-width: 0; padding: 6px 7px;
+    border: 1px solid var(--border); border-radius: 7px;
+    background: #fff; font-size: 11.5px; color: var(--text); outline: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .range-values input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(15, 118, 110, .1); }
+  .range-to { font-size: 10px; color: var(--muted-2); }
+  .range-track { position: relative; height: 28px; margin: 5px 2px 0; }
+  .range-track::before {
+    content: ''; position: absolute; left: 0; right: 0; top: 12px;
+    height: 4px; border-radius: 2px; background: #e2e8f0;
+  }
+  .range-fill { position: absolute; top: 12px; height: 4px; border-radius: 2px; background: var(--accent); }
+  .range-input {
+    position: absolute; left: 0; top: 0; width: 100%; height: 28px;
+    margin: 0; background: none; pointer-events: none;
+    -webkit-appearance: none; appearance: none;
+  }
+  .range-input::-webkit-slider-runnable-track { background: transparent; border: none; }
+  .range-input::-moz-range-track { background: transparent; border: none; }
+  .range-input::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #fff; border: 2px solid var(--accent);
+    box-shadow: 0 1px 4px rgba(15, 23, 42, .25);
+    pointer-events: all; cursor: pointer;
+  }
+  .range-input::-moz-range-thumb {
+    width: 13px; height: 13px; border-radius: 50%;
+    background: #fff; border: 2px solid var(--accent);
+    box-shadow: 0 1px 4px rgba(15, 23, 42, .25);
+    pointer-events: all; cursor: pointer;
+  }
+  .range-input-min { z-index: 3; }
+  .range-input-max { z-index: 4; }
+  .range-ends { display: flex; justify-content: space-between; margin-top: -1px; font-size: 9.5px; color: var(--muted-2); }
+
+  .ms { position: relative; }
+  .ms-toggle {
+    width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    background: #fff; color: var(--text); font-size: 12px; text-align: left; cursor: pointer;
+  }
+  .ms-toggle:hover { border-color: var(--border-strong); background: var(--panel-2); }
+  .ms-toggle[aria-expanded="true"] { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(15, 118, 110, .08); }
+  .ms-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ms-toggle svg { flex: 0 0 auto; color: var(--muted); }
+  .ms-panel {
+    position: fixed; z-index: 2000;
+    background: #fff; border: 1px solid var(--border-strong); border-radius: 10px;
+    box-shadow: var(--shadow-lg);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .ms-search { padding: 8px; border-bottom: 1px solid var(--border); }
+  .ms-search input {
+    width: 100%; padding: 7px 8px; border: 1px solid var(--border);
+    border-radius: 7px; font-size: 12px; outline: none;
+  }
+  .ms-search input:focus { border-color: var(--accent); }
+  .ms-actions { display: flex; align-items: center; gap: 7px; padding: 7px 8px; border-bottom: 1px solid var(--border); }
+  .ms-actions button { border: 0; background: none; color: var(--accent); font-size: 11px; cursor: pointer; padding: 2px 3px; }
+  .ms-actions button:hover { text-decoration: underline; }
+  .ms-total { margin-left: auto; color: var(--muted-2); font-size: 10px; }
+  .ms-options { overflow-y: auto; padding: 4px; min-height: 0; flex: 1; }
+  .ms-option {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; border-radius: 6px; font-size: 12px; cursor: pointer;
+  }
+  .ms-option:hover { background: var(--panel-2); }
+  .ms-option input { width: 14px; height: 14px; accent-color: var(--accent); flex: 0 0 auto; }
+  .ms-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ms-count { color: var(--muted-2); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+
+  .sidebar-footer { padding: 12px 16px 13px; border-top: 1px solid var(--border); background: #fff; }
+  .sidebar-note { margin-top: 7px; text-align: center; font-size: 10px; color: var(--muted-2); }
+
+  .btn {
+    border: 1px solid var(--border); background: #fff;
+    border-radius: 8px; padding: 7px 10px;
+    font-size: 11.5px; font-weight: 600; color: #334155;
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn:hover { background: var(--panel-2); border-color: var(--border-strong); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+  .btn.small { padding: 5px 8px; font-size: 10.5px; }
+  .icon-btn {
+    border: 0; background: #f1f5f9; color: var(--muted);
+    width: 28px; height: 28px; border-radius: 50%;
+    font-size: 18px; line-height: 1; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .icon-btn:hover { background: #e2e8f0; color: var(--text); }
+
+  .main {
+    flex: 1; min-width: 0; min-height: 0;
+    display: grid;
+    grid-template-rows: minmax(280px, 1.35fr) minmax(240px, .9fr);
+    gap: 12px; padding: 12px;
+  }
+  .map-card, .table-card {
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 14px; box-shadow: var(--shadow);
+    overflow: hidden; position: relative; min-height: 0;
+  }
+  .map-card { position: relative; }
+  #map { position: absolute; inset: 0; z-index: 0; background: #e5e7eb; }
+  .pipe-canvas { position: absolute; top: 0; left: 0; z-index: 450; pointer-events: none; }
+
+  .map-toolbar {
+    position: absolute; z-index: 20;
+    top: 12px; left: 54px; right: 12px;
+    display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+    pointer-events: none;
+  }
+  .map-toolbar > * { pointer-events: auto; }
+  .toolbar-group {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255, 255, 255, .96);
+    border: 1px solid var(--border); border-radius: 9px;
+    padding: 5px 7px; box-shadow: 0 2px 8px rgba(15, 23, 42, .08);
+    backdrop-filter: blur(6px);
+  }
+  .toolbar-group label {
+    font-size: 9.5px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--muted); white-space: nowrap;
+  }
+  .toolbar-group select {
+    border: 0; background: transparent; color: var(--text);
+    font-size: 11.5px; font-weight: 600; outline: none; cursor: pointer;
+  }
+  .toolbar-btn { background: rgba(255, 255, 255, .96); box-shadow: 0 2px 8px rgba(15, 23, 42, .08); }
+  .map-status {
+    margin-left: auto; padding: 5px 10px; border-radius: 999px;
+    background: #0f172a; color: #fff; font-size: 10.5px; font-weight: 600;
+    white-space: nowrap; box-shadow: 0 2px 8px rgba(15, 23, 42, .2);
+  }
+
+  .map-legend {
+    position: absolute; z-index: 20; right: 12px; bottom: 30px;
+    width: 252px; max-width: calc(100% - 24px);
+    background: rgba(255, 255, 255, .97);
+    border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .legend-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-bottom: 1px solid var(--border);
+  }
+  .legend-title { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .legend-mode-select {
+    margin-left: auto; min-width: 0; max-width: 150px;
+    border: 0; background: transparent; color: var(--text);
+    font-size: 10.5px; font-weight: 600; text-align: right;
+    cursor: pointer; padding: 1px 0; border-radius: 4px;
+  }
+  .legend-mode-select:hover { color: var(--accent); }
+  .legend-mode-select:focus-visible { outline: 2px solid var(--accent-border); outline-offset: 1px; }
+  .legend-toggle {
+    border: 0; background: none; color: var(--muted); cursor: pointer;
+    padding: 0 1px; font-size: 12px; line-height: 1;
+  }
+  .legend-toggle:hover { color: var(--text); }
+  .map-legend.collapsed { width: auto; }
+  .map-legend.collapsed .legend-head { border-bottom: 0; }
+  .map-legend.collapsed .legend-list { display: none; }
+  .legend-list { max-height: 220px; overflow-y: auto; padding: 5px 7px 7px; scrollbar-width: thin; }
+  .legend-item { display: flex; align-items: center; gap: 7px; padding: 2px 3px; font-size: 10.5px; }
+  .legend-item.zero { opacity: .42; }
+  .swatch { width: 10px; height: 10px; border-radius: 3px; flex: 0 0 auto; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .1); }
+  .legend-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .legend-count { color: var(--muted-2); font-size: 9.5px; font-variant-numeric: tabular-nums; }
+  .legend-empty { padding: 10px; font-size: 10.5px; color: var(--muted); }
+
+  .map-detail {
+    position: absolute; z-index: 25; left: 12px; bottom: 12px;
+    width: 366px; max-width: calc(100% - 24px); max-height: calc(100% - 80px);
+    overflow-y: auto;
+    background: rgba(255, 255, 255, .985);
+    border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: var(--shadow-lg); padding: 14px;
+    scrollbar-width: thin;
+  }
+  .detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .detail-kicker { font-size: 9px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
+  .detail-head h2 { margin: 1px 0 0; font-size: 20px; line-height: 1.1; letter-spacing: -.03em; }
+  .detail-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0 9px; }
+  .chip {
+    background: #f1f5f9; color: #334155; border-radius: 999px;
+    padding: 4px 8px; font-size: 10px; font-weight: 600;
+  }
+  .chip.accent { background: var(--accent-soft); color: var(--accent); }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-top: 6px; }
+  .detail-grid > div { min-width: 0; }
+  .detail-grid span {
+    display: block; font-size: 8.5px; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--muted-2);
+  }
+  .detail-grid b { display: block; margin-top: 1px; font-size: 11px; font-weight: 600; overflow-wrap: anywhere; }
+  .detail-comment { margin-top: 10px; padding: 8px 10px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; }
+  .detail-comment span { font-size: 8.5px; text-transform: uppercase; letter-spacing: .06em; color: #92400e; }
+  .detail-comment p { margin: 3px 0 0; font-size: 11px; line-height: 1.4; color: #78350f; }
+  .detail-more { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .detail-more summary {
+    cursor: pointer; font-size: 8.5px; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--muted); list-style: none;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .detail-more summary::-webkit-details-marker { display: none; }
+  .detail-more summary::before { content: '+'; font-size: 12px; line-height: 1; color: var(--muted-2); }
+  .detail-more[open] summary::before { content: '−'; }
+  .detail-more .detail-grid { margin-top: 6px; }
+  .detail-actions { display: flex; gap: 7px; margin: 2px 0 11px; }
+  .map-error {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    padding: 30px; text-align: center; color: var(--muted); font-size: 12.5px;
+    background: var(--panel-2);
+  }
+
+  .table-card { display: flex; flex-direction: column; }
+  .table-toolbar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 9px 13px; border-bottom: 1px solid var(--border);
+  }
+  .result-summary { font-size: 11px; color: var(--muted); }
+  .result-summary b { color: var(--text); font-weight: 600; }
+  .table-actions { margin-left: auto; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .table-actions label {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 9.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
+  }
+  .table-actions select {
+    border: 1px solid var(--border); border-radius: 7px; background: #fff;
+    padding: 4px 6px; font-size: 10.5px; color: var(--text); outline: none; cursor: pointer;
+  }
+  .table-wrap { flex: 1; overflow: auto; min-height: 0; scrollbar-width: thin; }
+  table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  thead th {
+    position: sticky; top: 0; z-index: 2;
+    background: var(--panel-2); text-align: left;
+    padding: 8px 9px; border-bottom: 1px solid var(--border);
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .065em;
+    color: var(--muted); white-space: nowrap; cursor: pointer; user-select: none;
+  }
+  thead th:hover { color: var(--text); }
+  thead th.num { text-align: right; }
+  thead th .arrow { margin-left: 3px; color: var(--accent); font-size: 8px; }
+  tbody td { padding: 6px 9px; border-bottom: 1px solid #eef2f7; white-space: nowrap; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: var(--panel-2); }
+  tbody tr.selected { background: #ecfeff; box-shadow: inset 3px 0 0 #0891b2; }
+  .col-id { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .dot {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    margin-right: 6px; vertical-align: 1px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .1);
+  }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .empty { padding: 28px 10px !important; text-align: center; color: var(--muted); font-size: 12px; white-space: normal !important; }
+  .empty b { color: var(--text); }
+  .pagination {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 13px; border-top: 1px solid var(--border); background: #fff;
+  }
+  .pagination .spacer { flex: 1; }
+  .page-btn {
+    border: 1px solid var(--border); background: #fff; border-radius: 7px;
+    padding: 5px 8px; font-size: 10.5px; color: var(--muted); cursor: pointer;
+  }
+  .page-btn:hover:not(:disabled) { background: var(--panel-2); color: var(--text); }
+  .page-btn:disabled { opacity: .38; cursor: default; }
+  .page-info { font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .toast {
+    position: fixed; z-index: 4000; left: 50%; bottom: 24px;
+    transform: translate(-50%, 12px);
+    background: #0f172a; color: #fff; padding: 9px 14px; border-radius: 999px;
+    font-size: 11.5px; font-weight: 500; opacity: 0; pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, .28);
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 3000;
+    background: rgba(15, 23, 42, .46);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal {
+    width: min(680px, 100%); max-height: 86vh; overflow-y: auto;
+    background: #fff; border-radius: 14px; box-shadow: 0 24px 80px rgba(0, 0, 0, .32);
+    padding: 22px 24px; scrollbar-width: thin;
+  }
+  .modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .modal h2 { margin: 0; font-size: 18px; letter-spacing: -.02em; }
+  .modal h3 { margin: 18px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  .modal p { margin: 10px 0; font-size: 12.5px; line-height: 1.5; color: #334155; }
+  .modal ul { margin: 6px 0 0; padding-left: 18px; }
+  .modal li { margin: 5px 0; font-size: 12px; line-height: 1.45; color: #334155; }
+  .modal code { background: #f1f5f9; padding: 1px 4px; border-radius: 4px; font-size: 11px; }
+  .about-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0; }
+  .about-stats > div { background: var(--panel-2); border: 1px solid var(--border); border-radius: 9px; padding: 9px 10px; }
+  .about-stats b { display: block; font-size: 16px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .about-stats span { display: block; margin-top: 2px; font-size: 9.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .modal-links { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 16px !important; }
+  .modal-links a { font-size: 12px; font-weight: 600; text-decoration: none; }
+  .modal-links a:hover { text-decoration: underline; }
+  .modal-caveat { margin-top: 14px !important; padding-top: 12px; border-top: 1px solid var(--border); font-size: 11px !important; color: var(--muted) !important; }
+
+  .loading {
+    position: fixed; inset: 0; z-index: 5000;
+    background: #f8fafc;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    transition: opacity .35s ease;
+  }
+  .loading.done { opacity: 0; pointer-events: none; }
+  .spinner {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 3px solid #dbe3ec; border-top-color: var(--accent);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 12.5px; color: var(--muted); }
+  .loading-error { max-width: 520px; padding: 24px; text-align: center; font-size: 13px; }
+  .loading-error b { display: block; margin-bottom: 8px; font-size: 15px; }
+  .loading-error p { margin: 6px 0; color: #334155; }
+
+  .sidebar-backdrop { position: fixed; inset: 0; z-index: 999; background: rgba(15, 23, 42, .42); }
+
+  @media (max-width: 980px) {
+    body { overflow: auto; }
+    .app-header { height: auto; min-height: 64px; flex-wrap: wrap; padding: 10px 14px; gap: 10px; }
+    .brand h1 { white-space: normal; }
+    .header-stats { display: none; }
+    .header-mobile-btn {
+      display: inline-flex; margin-left: auto;
+      border: 1px solid var(--border); background: #fff; border-radius: 8px;
+      padding: 6px 10px; font-size: 11.5px; font-weight: 600; cursor: pointer;
+    }
+    .header-mobile-btn:hover { background: var(--panel-2); }
+    .header-link { padding: 6px 4px; }
+    .app-shell { display: block; height: auto; }
+    .sidebar {
+      position: fixed; z-index: 1000; top: 0; bottom: 0; left: 0;
+      width: min(90vw, 360px); flex: none;
+      transform: translateX(-102%);
+      transition: transform .25s ease;
+      box-shadow: 0 0 50px rgba(0, 0, 0, .28);
+      border-right: 0;
+    }
+    .sidebar.open { transform: none; }
+    .sidebar-close { display: inline-flex; }
+    .main { display: block; padding: 10px; }
+    .map-card { height: 58vh; min-height: 380px; margin-bottom: 10px; }
+    .table-card { height: 60vh; min-height: 340px; }
+    .map-toolbar { left: 50px; right: 10px; top: 10px; }
+    .map-status { display: none; }
+    .map-legend { width: 214px; right: 10px; bottom: 27px; }
+    .legend-list { max-height: 160px; }
+    .map-detail { width: calc(100% - 20px); left: 10px; bottom: 10px; max-height: 56%; }
+    .table-toolbar { padding: 8px 10px; }
+    .table-actions { margin-left: 0; width: 100%; }
+    .about-stats { grid-template-columns: 1fr 1fr 1fr; }
+  }
+
+  @media (max-width: 640px) {
+    .brand h1 { font-size: 14px; }
+    .brand p { font-size: 10px; }
+    .source-link { display: none; }
+    .header-link { font-size: 11px; }
+    .toolbar-group { padding: 4px 6px; }
+    .toolbar-group label { display: none; }
+    .toolbar-btn { padding: 5px 7px; }
+    .map-legend { width: 196px; }
+    .legend-head { gap: 5px; padding: 8px; }
+    .legend-mode-select { max-width: 108px; font-size: 9.5px; }
+    .about-stats { grid-template-columns: 1fr; }
+    .modal { padding: 18px; }
+  }
+
+  @media (max-height: 720px) and (min-width: 981px) {
+    .main { grid-template-rows: minmax(210px, 1fr) minmax(190px, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text">Preparing 59,259 pipe segments…</div>
+</div>
+
+<header class="app-header">
+  <div class="brand">
+    <div class="brand-mark">AP</div>
+    <div class="brand-text">
+      <h1>Austin Private Drainage Pipes</h1>
+      <p>FloodPro layer 8 · interactive explorer</p>
+    </div>
+  </div>
+  <div class="header-stats">
+    <div class="stat"><span class="stat-value" id="statCount">—</span><span class="stat-label">segments</span></div>
+    <div class="stat"><span class="stat-value" id="statMiles">—</span><span class="stat-label">miles</span></div>
+    <div class="stat"><span class="stat-value" id="statYears">—</span><span class="stat-label">year built</span></div>
+  </div>
+  <button class="header-mobile-btn" id="mobileFilters" type="button">Filters</button>
+  <button class="header-link" id="aboutBtn" type="button">About</button>
+  <a class="source-link" href="https://maps.austintexas.gov/floodpro/" target="_blank" rel="noopener">Source ↗</a>
+  <a class="header-link" id="toggleSource" href="Austin_ArcGIS_Drainage_Pipes_Explorer.html" title="Switch to ArcGIS coverage">⇄ ArcGIS</a>
+</header>
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <h2>Filters</h2>
+      <div class="sidebar-head-actions">
+        <button class="link-btn" id="resetFilters" type="button">Reset all</button>
+        <button class="icon-btn sidebar-close" id="closeSidebar" type="button" aria-label="Close filters">&times;</button>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="searchInput" type="search" placeholder="Search ID, node, watershed, comments…" autocomplete="off">
+    </div>
+    <div class="quick-chips">
+      <button class="quick-chip" data-quick="pre1970" type="button">Built before 1970</button>
+      <button class="quick-chip" data-quick="since2010" type="button">Built 2010+</button>
+      <button class="quick-chip" data-quick="wide36" type="button">Width ≥ 36"</button>
+      <button class="quick-chip" data-quick="long200" type="button">Length ≥ 200 ft</button>
+      <button class="quick-chip" data-quick="culvert" type="button">Culverts</button>
+      <button class="quick-chip" data-quick="txdot" type="button">TxDOT</button>
+    </div>
+    <div class="field-stack" style="padding: 0 16px 12px;">
+      <label class="check"><input type="checkbox" id="showHeaders" checked> Show headers</label>
+      <label class="check"><input type="checkbox" id="showManholes" checked> Show manholes</label>
+    </div>
+    <div class="filter-scroll">
+      <section class="filter-section">
+        <h3>Year built <span class="hint">date constructed</span></h3>
+        <div id="yearRange"></div>
+        <label class="check"><input type="checkbox" id="yearUnknown"> Include unknown year</label>
+      </section>
+
+      <section class="filter-section">
+        <h3>Pipe size <span class="hint">width &amp; height, inches</span></h3>
+        <label class="sub-label">Width</label>
+        <div id="widthRange"></div>
+        <label class="check"><input type="checkbox" id="widthUnknown"> Include unknown width</label>
+        <label class="sub-label" style="margin-top:12px">Height</label>
+        <div id="heightRange"></div>
+        <label class="check"><input type="checkbox" id="heightUnknown"> Include unknown height</label>
+      </section>
+
+      <section class="filter-section">
+        <h3>Segment length <span class="hint">feet</span></h3>
+        <div id="lengthRange"></div>
+      </section>
+
+      <section class="filter-section">
+        <h3>Categories</h3>
+        <div class="field-stack">
+          <div><label class="sub-label">Subtype</label><div id="subtypeFilter"></div></div>
+          <div><label class="sub-label">Material</label><div id="materialFilter"></div></div>
+          <div><label class="sub-label">Structure shape</label><div id="shapeFilter"></div></div>
+          <div><label class="sub-label">Maintenance</label><div id="maintenanceFilter"></div></div>
+          <div><label class="sub-label">Watershed</label><div id="watershedFilter"></div></div>
+        </div>
+      </section>
+
+      <details class="filter-section advanced">
+        <summary>Record dates &amp; more</summary>
+        <div class="date-grid">
+          <label>Created from<input type="date" id="createdFrom"></label>
+          <label>Created to<input type="date" id="createdTo"></label>
+          <label>Modified from<input type="date" id="modifiedFrom"></label>
+          <label>Modified to<input type="date" id="modifiedTo"></label>
+        </div>
+        <label class="check"><input type="checkbox" id="commentsOnly"> Only segments with comments</label>
+      </details>
+    </div>
+    <div class="sidebar-footer">
+      <button class="btn primary" id="exportBtn" type="button" style="width:100%">Export filtered CSV</button>
+      <div class="sidebar-note" id="footerStats">—</div>
+    </div>
+  </aside>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
+
+  <main class="main">
+    <section class="map-card">
+      <div id="map"></div>
+      <div class="map-toolbar">
+        <div class="toolbar-group">
+          <label for="colorBy">Color by</label>
+          <select id="colorBy"></select>
+        </div>
+        <div class="toolbar-group">
+          <label for="basemap">Basemap</label>
+          <select id="basemap">
+            <option value="satellite">Satellite</option>
+            <option value="street">Street Map</option>
+          </select>
+        </div>
+        <button class="btn small toolbar-btn" id="fitFiltered" type="button">Fit filtered</button>
+        <button class="btn small toolbar-btn" id="resetView" type="button">Reset view</button>
+        <span class="map-status" id="mapStatus">—</span>
+      </div>
+      <div class="map-legend" id="legend"></div>
+      <div class="map-detail" id="detailCard" hidden></div>
+    </section>
+
+    <section class="table-card">
+      <div class="table-toolbar">
+        <div class="result-summary" id="resultSummary">Loading…</div>
+        <div class="table-actions">
+          <label>Sort
+            <select id="sortKey"></select>
+          </label>
+          <button class="page-btn" id="sortDir" type="button" title="Descending">↓</button>
+          <label>Rows
+            <select id="pageSize">
+              <option value="25">25</option>
+              <option value="50" selected>50</option>
+              <option value="100">100</option>
+              <option value="250">250</option>
+            </select>
+          </label>
+          <button class="btn small" id="exportBtn2" type="button">Export CSV</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-sort="id">Drainage ID <span class="arrow"></span></th>
+              <th data-sort="year">Year built <span class="arrow"></span></th>
+              <th data-sort="subtype">Type <span class="arrow"></span></th>
+              <th data-sort="width" class="num">Width (in) <span class="arrow"></span></th>
+              <th data-sort="height" class="num">Height (in) <span class="arrow"></span></th>
+              <th data-sort="length" class="num">Length (ft) <span class="arrow"></span></th>
+              <th data-sort="material">Material <span class="arrow"></span></th>
+              <th data-sort="watershed">Watershed <span class="arrow"></span></th>
+              <th data-sort="maintenance">Maint. <span class="arrow"></span></th>
+              <th data-sort="dateBuilt">Date built <span class="arrow"></span></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <span class="page-info" id="pageInfo">—</span>
+        <span class="spacer"></span>
+        <button class="page-btn" id="firstPage" type="button" title="First page">« First</button>
+        <button class="page-btn" id="prevPage" type="button" title="Previous page">‹ Prev</button>
+        <button class="page-btn" id="nextPage" type="button" title="Next page">Next ›</button>
+        <button class="page-btn" id="lastPage" type="button" title="Last page">Last »</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-backdrop" id="aboutBackdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+    <div class="modal-head">
+      <h2 id="aboutTitle">About this explorer</h2>
+      <button class="icon-btn" id="aboutClose" type="button" aria-label="Close">&times;</button>
+    </div>
+    <p>This page is a self-contained snapshot of the City of Austin <b>FloodPro</b> private drainage pipe layer (layer 8). The spreadsheet data, geometry and attributes are embedded directly in this HTML file.</p>
+    <div class="about-stats">
+      <div><b id="aboutCount">—</b><span>segments</span></div>
+      <div><b id="aboutMiles">—</b><span>miles of pipe</span></div>
+      <div><b>1915–2025</b><span>year built</span></div>
+    </div>
+    <h3>How to use it</h3>
+    <ul>
+      <li>Filter by year built, width, height, length, subtype, material, shape, maintenance, watershed, record dates or free text.</li>
+      <li>Sort by any column, or use the sort control above the table.</li>
+      <li>Click a line on the map or a row in the table to inspect a segment.</li>
+      <li>“Fit filtered” zooms the map to the current result set; “Export CSV” downloads exactly the filtered rows.</li>
+    </ul>
+    <h3>Notes</h3>
+    <ul>
+      <li>Year built is the City's date-constructed field. About 10,350 segments have no year; width/height 0 values are treated as unknown.</li>
+      <li>Length is the GIS line length (<code>SHAPE_LEN_ft</code>), not the often-blank City length attribute.</li>
+      <li>All records are <b>Active</b> and <b>Other</b> (private) ownership. Many attributes are blank or “No Data”.</li>
+      <li>Data pulled <span id="aboutPulled">—</span>. Coordinates are WGS84 / EPSG:4326. Basemaps © OpenStreetMap contributors and Esri.</li>
+    </ul>
+    <p class="modal-links">
+      <a href="https://maps.austintexas.gov/floodpro/" target="_blank" rel="noopener">FloodPro map ↗</a>
+      <a href="https://maps.austintexas.gov/arcgis/rest/services/FloodPro/Stormdrain_Infrastructure/MapServer/8" target="_blank" rel="noopener">ArcGIS layer 8 ↗</a>
+    </p>
+    <p class="modal-caveat">This inventory is published for reference and mapping. It is not a substitute for field survey, as-built records or utility locate requests. Call 811 before digging.</p>
+  </div>
+</div>
+
+<script>/*__PIPE_DATA__*/</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+(function () {
+  'use strict';
+  /*__APP_JS__*/
+})();
+</script>
+</body>
+</html>

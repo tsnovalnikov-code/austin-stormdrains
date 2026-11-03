@@ -1,0 +1,18 @@
+{
+  "source_page": "https://www.arcgis.com/home/item.html?id=c75669e7185b4a7593fb397b67cbaa43",
+  "service_url": "https://services.arcgis.com/0L95CJ0VTaxqcmED/arcgis/rest/services/UTILITIESCOMMUNICATION_DrainagePipe/FeatureServer",
+  "layer_id": 0,
+  "layer_name": "Drainage Pipe",
+  "layer_url": "https://services.arcgis.com/0L95CJ0VTaxqcmED/arcgis/rest/services/UTILITIESCOMMUNICATION_DrainagePipe/FeatureServer/0",
+  "query_url": "https://services.arcgis.com/0L95CJ0VTaxqcmED/arcgis/rest/services/UTILITIESCOMMUNICATION_DrainagePipe/FeatureServer/0/query",
+  "feature_count": 171635,
+  "pulled_at_utc": "2026-11-03 14:48:06 UTC",
+  "pulled_at_local": "2026-11-03 08:48:06 AM CST",
+  "coordinate_system": "WGS84 / EPSG:4326",
+  "total_shape_length_ft": 12348437.252759358,
+  "total_shape_length_miles": 2338.7191766589694,
+  "outputs": {
+    "geojson": "Austin_ArcGIS_Drainage_Pipes.geojson",
+    "csv": "Austin_ArcGIS_Drainage_Pipes.csv"
+  }
+}
